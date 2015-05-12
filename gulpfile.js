@@ -1,33 +1,77 @@
 
-var gulp =      require("gulp");
+var gulp =      require("gulp-param")(require("gulp"), process.argv);
 
 var uglify =    require("gulp-uglify"),
     sass =      require("gulp-sass"),
     clean =     require("gulp-clean"),
-    rename =     require("gulp-rename"),
+    rename =    require("gulp-rename"),
     header =    require("gulp-header"),
     bump =      require("gulp-bump");
 
-var pkg =       require("./package.json");
+var fs =        require("fs"),
+    semver =    require("semver");
 
 
-var banner = "/*\n" +
-"     _ _      _       _            \n" +
-" ___| (_) ___| | __  (_)___        \n" +
-"/ __| | |/ __| |/ /  | / __|       \n" +
-"\\__ \\ | | (__|   < _ | \\__ \\   \n" +
-"|___/_|_|\\___|_|\\_(_)/ |___/     \n" +
-"                   |__/            \n" +
-" Version: "+ pkg.version +" \n" +
-"  Author: "+ pkg.author +" \n" +
-" Website: http://kenwheeler.github.io \n" +
-"    Docs: http://kenwheeler.github.io/slick \n" +
-"    Repo: http://github.com/kenwheeler/slick \n" +
-"  Issues: http://github.com/kenwheeler/slick/issues \n\n" +
-"*/\n\n";
+
+var createBanner = function() {
+
+    var pkg = JSON.parse(fs.readFileSync('./package.json', 'utf8'));
+
+    return "/*\n" +
+    "       _ _      _       _\n" +
+    "   ___| (_) ___| | __  (_)___\n" +
+    "  / __| | |/ __| |/ /  | / __|\n" +
+    "  \\__ \\ | | (__|   < _ | \\__ \\\n" +
+    "  |___/_|_|\\___|_|\\_(_)/ |___/\n" +
+    "                     |__/\n" +
+    "   Version: "+ pkg.version +"\n" +
+    "    Author: "+ pkg.author +"\n" +
+    "   Website: http://kenwheeler.github.io\n" +
+    "      Docs: http://kenwheeler.github.io/slick\n" +
+    "      Repo: http://github.com/kenwheeler/slick\n" +
+    "    Issues: http://github.com/kenwheeler/slick/issues\n" +
+    "*/\n";
+
+};
 
 
-gulp.task("clean", function() {
+gulp.task("bump", function(patch, minor, major) {
+    
+    var b = 
+        (patch) ? "patch" : 
+        (minor) ? "minor" : 
+        (major) ? "major" : 
+        null;
+    
+    if( b ) {
+
+        var pkg = require("./package.json"),
+            oldv = pkg.version,
+            newv = semver.inc( oldv , b );
+
+        console.log(">> Bumping Version to " + newv );
+
+        return gulp.src([
+
+                "./bower.json", 
+                "./component.json", 
+                "./package.json", 
+                "./slick.jquery.json"
+
+            ])
+            .pipe(bump({ version: newv }))
+            .pipe(gulp.dest("./"));
+
+    } else {
+
+        console.log(">> Not Bumping Version...");
+        return gulp;
+
+    }
+
+});
+
+gulp.task("clean", ["bump"], function() {
 
     return gulp.src("dist/*", {read: false})
         .pipe(clean());
@@ -44,6 +88,20 @@ gulp.task("copy", ["clean"], function() {
 
 });
 
+gulp.task("js", ["clean"], function() {
+
+    gulp.src("src/slick.js")
+        .pipe(header( createBanner() ))
+        .pipe(gulp.dest("dist/"));
+
+    return gulp.src("src/slick.js")
+        .pipe(uglify())
+        .pipe(header( createBanner() ))
+        .pipe(rename("slick.min.js"))
+        .pipe(gulp.dest("dist/"));
+
+});
+
 gulp.task("sass", ["clean"], function() {
 
     return gulp.src("src/*.scss")
@@ -51,26 +109,9 @@ gulp.task("sass", ["clean"], function() {
             sourceComments: false,
             outputStyle: "expanded"
         }))
-        .pipe(header( banner ))
+        .pipe(header( createBanner() ))
         .pipe(gulp.dest("dist/"));
 
 });
 
-gulp.task("js", ["clean"], function() {
-
-    gulp.src("src/slick.js")
-        .pipe(header( banner ))
-        .pipe(gulp.dest("dist/"));
-
-    return gulp.src("src/slick.js")
-        .pipe(uglify())
-        .pipe(header( banner ))
-        .pipe(rename("slick.min.js"))
-        .pipe(gulp.dest("dist/"));
-
-});
-
-
-
-
-gulp.task("default", ["clean", "copy", "sass", "js"]);
+gulp.task("default", ["bump", "clean", "copy", "sass", "js"]);
