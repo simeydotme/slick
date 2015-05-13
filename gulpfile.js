@@ -15,7 +15,7 @@ var fs =        require("fs"),
 
 var createBanner = function() {
 
-    var pkg = JSON.parse(fs.readFileSync('./package.json', 'utf8'));
+    var pkg = JSON.parse(fs.readFileSync("./package.json", "utf8"));
 
     return "/*\n" +
     "       _ _      _       _\n" +
@@ -34,6 +34,31 @@ var createBanner = function() {
 
 };
 
+var updateReadme = function( oldv, newv ) {
+
+    var readme = fs.readFileSync("./README.markdown", "utf8"),
+        regex = new RegExp( "/"+oldv+"/", "gi" );
+
+        readme = readme.replace( regex , "/" + newv + "/" );
+
+    fs.writeFile("./README.markdown", readme, function(err) {
+        if (err) { 
+            throw err; 
+        } else { 
+            console.log(">> Bumpeing Version in README.markdown"); 
+        }
+    });
+
+};
+
+
+
+
+
+
+
+
+
 
 gulp.task("bump", function(patch, minor, major) {
     
@@ -50,6 +75,7 @@ gulp.task("bump", function(patch, minor, major) {
             newv = semver.inc( oldv , b );
 
         console.log(">> Bumping Version to " + newv );
+        updateReadme( oldv, newv );
 
         return gulp.src([
 
