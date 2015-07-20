@@ -12,6 +12,8 @@ var fs =        require("fs"),
     semver =    require("semver");
 
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 
 var createBanner = function() {
 
@@ -45,20 +47,26 @@ var updateReadme = function( oldv, newv ) {
         if (err) { 
             throw err; 
         } else { 
-            console.log(">> Bumpeing Version in README.markdown"); 
+            console.log(">> Bumping Version in README.markdown"); 
         }
     });
 
 };
 
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-
-
-
-
-
+/**
+ * Bump task can be used like:
+ * 
+ *     gulp bump --patch
+ *     gulp bump --minor
+ *     gulp bump --major
+ *     
+ * This task will ONLY bump the version, it will not
+ * spawn the sub-tasks or write dist files.
+ */
 
 gulp.task("bump", function(patch, minor, major) {
     
@@ -97,12 +105,23 @@ gulp.task("bump", function(patch, minor, major) {
 
 });
 
+
+/**
+ * Clean task used to wipe out the dist files
+ * and help prevent getting EODIR NOT EMPTY errors.
+ */
+
 gulp.task("clean", ["bump"], function() {
 
     return gulp.src("dist/*", {read: false})
         .pipe(clean());
 
 });
+
+
+/**
+ * Copy all the Images and Fonts to the dist folder.
+ */
 
 gulp.task("copy", ["clean"], function() {
 
@@ -113,6 +132,12 @@ gulp.task("copy", ["clean"], function() {
         .pipe(gulp.dest("dist/"));
 
 });
+
+
+/**
+ * Add the banner to the JS files, uglify
+ * and whack it in the dist folder!
+ */
 
 gulp.task("js", ["clean"], function() {
 
@@ -128,6 +153,12 @@ gulp.task("js", ["clean"], function() {
 
 });
 
+
+/**
+ * compile the sass files and stick a banner
+ * in the file, then chuck it in the dist folder.
+ */
+
 gulp.task("sass", ["clean"], function() {
 
     return gulp.src("src/*.scss")
@@ -139,5 +170,19 @@ gulp.task("sass", ["clean"], function() {
         .pipe(gulp.dest("dist/"));
 
 });
+
+/**
+ * use the gulp task like:
+ *
+ *      gulp
+ *      gulp --patch
+ *      gulp --minor
+ *      gulp --major
+ *
+ * gulping without a "--" suffix will just write the
+ * dist files, so you can check out they werkin' jus' right
+ * before you go and bump.
+ * 
+ */
 
 gulp.task("default", ["bump", "clean", "copy", "sass", "js"]);
